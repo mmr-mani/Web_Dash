@@ -13,8 +13,14 @@ st.set_page_config(page_title="Gaming Job Trending Tech",
 st.title(":bar_chart: Analysis Dashboard")
 # st.markdown('#')
 
-data = pd.read_csv("E:\\Final_Project\\Web_Dash\\Aswift_Jobs_data.csv")
-Country_code = pd.read_csv("E:\\Final_Project\\Web_Dash\\Country_code.csv")
+@st.cache
+def collect_data(filename):
+    data = pd.read_csv(filename)
+    return data
+
+
+data = collect_data('data//Aswift_Jobs_data.csv')
+Country_code = collect_data('data//Country_code.csv')
 data = data.iloc[:, 1:]
 # print(data.head())
 

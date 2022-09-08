@@ -306,29 +306,14 @@ st.dataframe(data_selection)
 st.markdown("---")
 
 
-# # ---- HIDE STREAMLIT STYLE ----
-# hide_st_style = """
-#             <style>
-#             #MainMenu {visibility: hidden;}
-#             footer {visibility: hidden;}
-#             header {visibility: hidden;}
-#             </style>
-#             """
-# st.markdown(hide_st_style, unsafe_allow_html=True)
+# ---- HIDE STREAMLIT STYLE ----
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
 
 
-# def my_widget(key):
-#     st.subheader('Hello there!')
-#     return st.button("Click me " + key)
-
-# # This works in the main area
-# clicked = my_widget("first")
-
-# # And within an expander
-# my_expander = st.expander("Expand", expanded=True)
-# with my_expander:
-#     clicked = my_widget("second")
-
-# # AND in st.sidebar!
-# with st.sidebar:
-#     clicked = my_widget("third")

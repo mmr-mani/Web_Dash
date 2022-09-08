@@ -39,7 +39,6 @@ Job_Mode = st.sidebar.multiselect(
 
 data_selection = data.query("Country ==@Country & Job_Mode==@Job_Mode")
 
-st.header(f'Total Jobs: {len(data_selection)}')
 
 # World_map
 
@@ -53,6 +52,8 @@ layout = dict(title='Global Jobs', geo = dict(projection = {'type':'robinson'}))
 
 x = pg.Figure(data=[Country_points], layout=layout)
 st.plotly_chart(x)
+
+st.header(f'Total Jobs: {len(data_selection)}')
 
 
 # Programming Languages

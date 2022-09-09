@@ -1,10 +1,6 @@
 import pandas as pd
-import numpy as np
 import streamlit as st
 import plotly.express as px
-import seaborn as sns
-import matplotlib.pyplot as plt
-import plotly.offline as po
 import plotly.graph_objs as pg
 
 st.set_page_config(page_title="Gaming Job Trending Tech",
@@ -19,8 +15,8 @@ def collect_data(filename):
     return data
 
 
-data = collect_data('data//Aswift_Jobs_data.csv')
-Country_code = collect_data('data//Country_code.csv')
+data = collect_data("data//Aswift_Jobs_data.csv")
+Country_code = collect_data("data//Country_code.csv")
 data = data.iloc[:, 1:]
 # print(data.head())
 
@@ -45,15 +41,27 @@ data_selection = data.query("Country ==@Country & Job_Mode==@Job_Mode")
 Country_points = dict(
     type='choropleth', locations=Country_job['Code'], z=Country_job['Num_jobs'], text=Country_job['Country'])
 
-# layout = dict(title='Global Jobs', geo=dict(
-#     projection={'type': 'hammer'}, showlakes=True, lakecolor='rgb(0,191,255)'))
+layout = dict(geo = dict(projection = {'type':'orthographic'}))
+W_Map = pg.Figure(data=[Country_points], layout=layout)
 
-layout = dict(title='Global Jobs', geo = dict(projection = {'type':'robinson'}))
+Countries.sort_values(by=['Num_jobs'], inplace=True, ascending=False)
 
-x = pg.Figure(data=[Country_points], layout=layout)
-st.plotly_chart(x)
+st.header(f'Global Jobs - {len(data)}')
 
-st.header(f'Total Jobs: {len(data_selection)}')
+col1, col2 = st.columns(2, gap="large")
+with col1:
+    tab1, tab2 = st.tabs(["🗺 Map","📉 Pie"])
+    tab1.plotly_chart(W_Map,use_container_width=True)
+    tab2.plotly_chart(px.pie(Countries, values='Num_jobs',names='Country'), use_container_width=True)
+
+with col2:
+    st.markdown('##')
+    st.subheader("☛ Data")
+    st.dataframe(Countries)
+
+
+st.header(f'Total Jobs for selected Countries: {len(data_selection)}')
+
 
 
 # Programming Languages
@@ -102,7 +110,7 @@ with col2:
     st.dataframe(Company_Position)
 
 # Software_list
-Software_list = (data_selection.iloc[:, 21:29]).sum(axis=0)
+Software_list = (data_selection.iloc[:, 21:28]).sum(axis=0)
 Software_list = pd.DataFrame(
     {'Software_lists': Software_list.index, 'Values': Software_list.values})
 Software_list.sort_values(by=['Values'], inplace=True, ascending=False)
@@ -124,7 +132,7 @@ with col2:
     st.dataframe(Software_list)
 
 # Database_list
-Database_list = (data_selection.iloc[:, 29:34]).sum(axis=0)
+Database_list = (data_selection.iloc[:, 28:33]).sum(axis=0)
 Database_list = pd.DataFrame(
     {'Database_lists': Database_list.index, 'Values': Database_list.values})
 Database_list.sort_values(by=['Values'], inplace=True, ascending=False)
@@ -146,7 +154,7 @@ with col2:
     st.dataframe(Database_list)
 
 # VFX_software
-VFX_software = (data_selection.iloc[:, 34:40]).sum(axis=0)
+VFX_software = (data_selection.iloc[:, 33:39]).sum(axis=0)
 VFX_software = pd.DataFrame(
     {'VFX_softwares': VFX_software.index, 'Values': VFX_software.values})
 VFX_software.sort_values(by=['Values'], inplace=True, ascending=False)
@@ -168,7 +176,7 @@ with col2:
     st.dataframe(VFX_software)
 
 # Gaming_engines
-Gaming_engine = (data_selection.iloc[:, 40:44]).sum(axis=0)
+Gaming_engine = (data_selection.iloc[:, 39:44]).sum(axis=0)
 Gaming_engine = pd.DataFrame(
     {'Gaming_engines': Gaming_engine.index, 'Values': Gaming_engine.values})
 Gaming_engine.sort_values(by=['Values'], inplace=True, ascending=False)

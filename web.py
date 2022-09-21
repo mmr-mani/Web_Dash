@@ -3,12 +3,36 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objs as pg
 
-st.set_page_config(page_title="Gaming Job Trending Tech",
-                   page_icon=":video_game:", layout="wide")
+# Function to plot bar and pie chart and return best tech
+def plots_column (Title,X,Y,Data):
+    #Bar chart
+    Bar = px.bar(Data, x=X, y=Y,text=Y, color=X)
+    Bar.update_layout(title_text=Title, title_x=0.5)
+    #Pie Chart
+    Pie = px.pie(Data, values=Y,names=X)
+    Pie.update_layout(title_text=Title, title_x=0.5)
+    # Set the column to show plot and data side by side
+    col1, col2 = st.columns(2, gap="large")
+    with col1:
+        # Tabs to point Pie Chart and Bar Chart
+        tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
+        tab1.plotly_chart(Bar, use_container_width=True)
+        tab2.plotly_chart(Pie, use_container_width=True)
 
-st.title(":bar_chart: Analysis Dashboard")
+    with col2:
+        st.markdown('##')
+        st.subheader("☛ Data")
+        st.dataframe(Data)
+    st.markdown("---")
+    # Identify the best Tech
+    Best = ''.join(Data[X].head(1).values)
+    return Best
+
+st.set_page_config(page_title="Analysis Dashboard",page_icon=":video_game:", layout="wide")
+
+st.title(":bar_chart: Trends at Gaming Industry")
 # st.markdown('#')
-
+ 
 @st.cache
 def collect_data(filename):
     data = pd.read_csv(filename)
@@ -17,312 +41,107 @@ def collect_data(filename):
 
 data = collect_data("data//Aswift_Jobs_data.csv")
 Country_code = collect_data("data//Country_code.csv")
-data = data.iloc[:, 1:]
-# print(data.head())
+# data = data.iloc[:, 1:]
 
 Countries = data.Country.value_counts()
-Countries = pd.DataFrame(
-    {'Country': Countries.index, 'Num_jobs': Countries.values})
+Countries = pd.DataFrame({'Country': Countries.index, 'Num_jobs': Countries.values})
 
 Country_job = pd.merge(Countries, Country_code, on='Country', how='inner')
 
-st.sidebar.header(('Filter'))
-Country = st.sidebar.multiselect(
-    'Select the Country:', options=data['Country'].unique(), default=['United Kingdom'])
-#Country = st.sidebar.multiselect('Select the Country:', options=data['Country'].unique(), default=data['Country'].unique())
+# Add Filters
+st.sidebar.header(('Filters'))
+Country = st.sidebar.multiselect('Select the Country', options=data['Country'].unique(), default=['United Kingdom'])
+if st.sidebar.checkbox('Select all'):
+    Country = list(data['Country'].unique())
+
 Job_Mode = st.sidebar.multiselect(
-    'Select the Job Mode:', options=data['Job_Mode'].unique(), default=data['Job_Mode'].unique())
+    'Select the Job Mode', options=data['Job_Mode'].unique(), default=data['Job_Mode'].unique())
 
 data_selection = data.query("Country ==@Country & Job_Mode==@Job_Mode")
 
-
 # World_map
-
-Country_points = dict(
-    type='choropleth', locations=Country_job['Code'], z=Country_job['Num_jobs'], text=Country_job['Country'])
-
-layout = dict(geo = dict(projection = {'type':'orthographic'}))
+st.header(f'Global Jobs Posted - {len(data)}')
+Country_points = dict(type='choropleth', locations=Country_job['Code'], z=Country_job['Num_jobs'], text=Country_job['Country'])
+layout = dict(geo = dict(projection = {'type':'robinson'}))
 W_Map = pg.Figure(data=[Country_points], layout=layout)
-
+W_Map.update_layout(title_text='Jobs posted all over the world based on the Job listing Website', title_x=0.5)
 Countries.sort_values(by=['Num_jobs'], inplace=True, ascending=False)
+st.plotly_chart(W_Map)
 
-st.header(f'Global Jobs - {len(data)}')
+C_best = plots_column('Jobs posted all over the world based on the Job listing Website','Country','Num_jobs',Countries)
+st.success(f'From the above chart, we can say that **{C_best}** has more jobs in the Gaming Industry based on the Job listing Website')
 
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    tab1, tab2 = st.tabs(["🗺 Map","📉 Pie"])
-    tab1.plotly_chart(W_Map,use_container_width=True)
-    tab2.plotly_chart(px.pie(Countries, values='Num_jobs',names='Country'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Countries)
-
-
-st.header(f'Total Jobs for selected Countries: {len(data_selection)}')
+Clist = ', '.join(Country)
+st.header(f'Selected Country: {Clist}')
+st.subheader(f'Jobs based on selection: {len(data_selection)}')
 
 
 
-# Programming Languages
-Program_language = (data_selection.iloc[:, 9:14]).sum(axis=0)
-Program_language = pd.DataFrame(
-    {'Programming_Language': Program_language.index, 'Values': Program_language.values})
-Program_language.sort_values(by=['Values'], inplace=True, ascending=False)
-
-st.subheader("Trending Programming Languages")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Program_language, x="Programming_Language", y="Values",
-                      text="Values", color="Programming_Language"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Program_language, values='Values',
-                      names='Programming_Language'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Program_language)
-
-
-# Company Required position
-Company_Position = (data_selection.iloc[:, 14:21]).sum(axis=0)
-Company_Position = pd.DataFrame(
-    {'Company_Positions': Company_Position.index, 'Values': Company_Position.values})
-Company_Position.sort_values(by=['Values'], inplace=True, ascending=False)
-
-st.subheader("Trending Job Positions")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Company_Position, x="Company_Positions", y="Values",
-                      text="Values", color="Company_Positions"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Company_Position, values='Values',
-                      names='Company_Positions'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Company_Position)
+# job Positions
+st.subheader("Trending Job Positions in Gaming Industry")
+Role = data_selection.Job_Role.value_counts()
+Role = pd.DataFrame({'Roles': Role.index, 'Values': Role.values})
+R_best = plots_column('Most required job postions in Gaming Industry','Roles','Values',Role)
+st.success(f'From the above chart, we can say that most of the companies are looking for **{R_best}** in the Gaming Industry based on the selection')
 
 # Software_list
-Software_list = (data_selection.iloc[:, 21:28]).sum(axis=0)
-Software_list = pd.DataFrame(
-    {'Software_lists': Software_list.index, 'Values': Software_list.values})
+st.subheader("Trending Softwares required to know in the Gaming Industry")
+Software_list = (data_selection.iloc[:, 10:17]).sum(axis=0)
+Software_list = pd.DataFrame({'Software_lists': Software_list.index, 'Values': Software_list.values})
 Software_list.sort_values(by=['Values'], inplace=True, ascending=False)
+S_best = plots_column('Most required softwares to learn in Gaming Industry','Software_lists','Values',Software_list)
+st.success(f'From the above chart, we can say that most of the companies are looking for candidates how knows **{S_best}** software in the Gaming Industry based on the selection')
 
-st.subheader("Trending Softwares")
+# Programming Languages
+st.subheader("Trending Programming Languages required to know in Gaming Industry")
+Program_language = (data_selection.iloc[:, 17:22]).sum(axis=0)
+Program_language = pd.DataFrame({'Program_languages': Program_language.index, 'Values': Program_language.values})
+Program_language.sort_values(by=['Values'], inplace=True, ascending=False)
+P_best = plots_column('Trend Programming Languages to learn in Gaming Industry','Program_languages','Values',Program_language)
+st.success(f'From the above chart, we can say that most of the companies are looking for candidates how knows **{P_best}** as Programming Language in the Gaming Industry based on the selection')
 
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Software_list, x="Software_lists", y="Values",
-                      text="Values", color="Software_lists"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Software_list, values='Values',
-                      names='Software_lists'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Software_list)
-
-# Database_list
-Database_list = (data_selection.iloc[:, 28:33]).sum(axis=0)
-Database_list = pd.DataFrame(
-    {'Database_lists': Database_list.index, 'Values': Database_list.values})
-Database_list.sort_values(by=['Values'], inplace=True, ascending=False)
-
-st.subheader("Trending Databases")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Database_list, x="Database_lists", y="Values",
-                      text="Values", color="Database_lists"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Database_list, values='Values',
-                      names='Database_lists'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Database_list)
-
-# VFX_software
-VFX_software = (data_selection.iloc[:, 33:39]).sum(axis=0)
-VFX_software = pd.DataFrame(
-    {'VFX_softwares': VFX_software.index, 'Values': VFX_software.values})
-VFX_software.sort_values(by=['Values'], inplace=True, ascending=False)
-
-st.subheader("Trending VFX Softwares")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(VFX_software, x="VFX_softwares", y="Values",
-                      text="Values", color="VFX_softwares"), use_container_width=True)
-    tab2.plotly_chart(px.pie(VFX_software, values='Values',
-                      names='VFX_softwares'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(VFX_software)
-
-# Gaming_engines
-Gaming_engine = (data_selection.iloc[:, 39:44]).sum(axis=0)
-Gaming_engine = pd.DataFrame(
-    {'Gaming_engines': Gaming_engine.index, 'Values': Gaming_engine.values})
+# Game Engines
+st.subheader("Trending Game Engines required to know in Gaming Industry")
+Gaming_engine = (data_selection.iloc[:, 22:26]).sum(axis=0)
+Gaming_engine = pd.DataFrame({'Gaming_engines': Gaming_engine.index, 'Values': Gaming_engine.values})
 Gaming_engine.sort_values(by=['Values'], inplace=True, ascending=False)
+G_best = plots_column('Trend Game Engines to learn in Gaming Industry','Gaming_engines','Values',Gaming_engine)
+st.success(f'From the above chart, we can say that most of the companies are looking for candidates how knows **{G_best}** Game Engine in the Gaming Industry based on the selection')
 
-st.subheader("Trending Gaming Engines")
+#Data bases
+st.subheader("Trending Databases required to know in Gaming Industry")
+Database_list = (data_selection.iloc[:, 26:31]).sum(axis=0)
+Database_list = pd.DataFrame({'Database_lists': Database_list.index, 'Values': Database_list.values})
+Database_list.sort_values(by=['Values'], inplace=True, ascending=False)
+D_best = plots_column('Trend DataBases to learn in Gaming Industry','Database_lists','Values',Database_list)
+st.success(f'From the above chart, we can say that most of the companies are looking for candidates how knows **{D_best}** Database in the Gaming Industry based on the selection')
 
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Gaming_engine, x="Gaming_engines", y="Values",
-                      text="Values", color="Gaming_engines"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Gaming_engine, values='Values',
-                      names='Gaming_engines'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Gaming_engine)
-
-# Console_list
-Console_list = (data_selection.iloc[:, 44:48]).sum(axis=0)
-Console_list = pd.DataFrame(
-    {'Console_lists': Console_list.index, 'Values': Console_list.values})
+#Console List
+st.subheader("Consoles required to know in Gaming Industry")
+Console_list = (data_selection.iloc[:, 49:53]).sum(axis=0)
+Console_list = pd.DataFrame({'Console_lists': Console_list.index, 'Values': Console_list.values})
 Console_list.sort_values(by=['Values'], inplace=True, ascending=False)
-
-st.subheader("Trending Console lists")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Console_list, x="Console_lists", y="Values",
-                      text="Values", color="Console_lists"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Console_list, values='Values',
-                      names='Console_lists'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Console_list)
-
-# OS_knowledge
-OS_knowledge = (data_selection.iloc[:, 48:51]).sum(axis=0)
-OS_knowledge = pd.DataFrame(
-    {'OS_knowledges': OS_knowledge.index, 'Values': OS_knowledge.values})
-OS_knowledge.sort_values(by=['Values'], inplace=True, ascending=False)
-
-st.subheader("Trending OS")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(OS_knowledge, x="OS_knowledges", y="Values",
-                      text="Values", color="OS_knowledges"), use_container_width=True)
-    tab2.plotly_chart(px.pie(OS_knowledge, values='Values',
-                      names='OS_knowledges'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(OS_knowledge)
+Cl_best = plots_column('Consoles to learn in Gaming Industry','Console_lists','Values',Console_list)
+st.success(f'From the above chart, we can say that most of the companies are looking for candidates how knows **{Cl_best}** console in the Gaming Industry based on the selection')
 
 # Gaming_knowledge
-Gaming_knowledge = (data_selection.iloc[:, 51:64]).sum(axis=0)
-Gaming_knowledge = pd.DataFrame(
-    {'Gaming_knowledges': Gaming_knowledge.index, 'Values': Gaming_knowledge.values})
+st.subheader("Gaming knowledge required to know in Gaming Industry")
+Gaming_knowledge = (data_selection.iloc[:, 31:42]).sum(axis=0)
+Gaming_knowledge = pd.DataFrame({'Gaming_knowledges': Gaming_knowledge.index, 'Values': Gaming_knowledge.values})
 Gaming_knowledge.sort_values(by=['Values'], inplace=True, ascending=False)
+GK_best = plots_column('Gaming knowledge to learn in Gaming Industry','Gaming_knowledges','Values',Gaming_knowledge)
+st.success(f'Most of the companies requires for candidates how knows the above gaming technologies like **{GK_best}** in the Gaming Industry based on the selection')
 
-st.subheader("Trending Gaming knowledge")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Gaming_knowledge, x="Gaming_knowledges", y="Values",
-                      text="Values", color="Gaming_knowledges"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Gaming_knowledge, values='Values',
-                      names='Gaming_knowledges'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Gaming_knowledge)
-
-# Technology_list
-Technology_list = (data_selection.iloc[:, 64:71]).sum(axis=0)
-Technology_list = pd.DataFrame(
-    {'Technology_lists': Technology_list.index, 'Values': Technology_list.values})
+# Additional Knowledge
+st.subheader("Additional Technology required to know in Gaming Industry")
+Technology_list = (data_selection.iloc[:, 42:49]).sum(axis=0)
+Technology_list = pd.DataFrame({'Technology_lists': Technology_list.index, 'Values': Technology_list.values})
 Technology_list.sort_values(by=['Values'], inplace=True, ascending=False)
+T_best = plots_column('Additional knowledges to learn in Gaming Industry','Technology_lists','Values',Technology_list)
+st.success(f'Most of the companies requires for candidates how knows the above additional technologies like **{T_best}** in the Gaming Industry based on the selection')
 
-st.subheader("Trending Technology lists")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Technology_list, x="Technology_lists", y="Values",
-                      text="Values", color="Technology_lists"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Technology_list, values='Values',
-                      names='Technology_lists'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Company_Position)
-
-# Documentation_list
-Documentation_list = (data_selection.iloc[:, 71:77]).sum(axis=0)
-Documentation_list = pd.DataFrame(
-    {'Documentation_lists': Documentation_list.index, 'Values': Documentation_list.values})
-Documentation_list.sort_values(by=['Values'], inplace=True, ascending=False)
-
-st.subheader("Trending Documentation Softwares")
-
-col1, col2 = st.columns(2, gap="large")
-with col1:
-    #st.plotly_chart(Program_language_fig1, use_container_width=True)
-    tab1, tab2 = st.tabs(["📶 Chart", "📉 Pie"])
-    tab1.plotly_chart(px.bar(Documentation_list, x="Documentation_lists", y="Values",
-                      text="Values", color="Documentation_lists"), use_container_width=True)
-    tab2.plotly_chart(px.pie(Documentation_list, values='Values',
-                      names='Documentation_lists'), use_container_width=True)
-
-with col2:
-    st.markdown('##')
-    st.subheader("☛ Data")
-    st.dataframe(Documentation_list)
-
-
-st.markdown("---")
 
 st.header("Job Detail Data")
 st.dataframe(data_selection)
 st.markdown("---")
-
-
-# ---- HIDE STREAMLIT STYLE ----
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
-
 
